@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>跳绳视频分析测试</title>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>跳绳视频分析测试</h1>
+    <div class="form-group">
+        <label for="video">选择视频文件：</label>
+        <input type="file" id="video" accept="video/*">
+    </div>
+    <button onclick="uploadVideo()">上传并分析</button>
+
+    <div id="result"></div>
+
+    <!-- 在JavaScript部分修改视频处理逻辑 -->
+    <script>
+        function uploadVideo() {
+            const fileInput = document.getElementById('video');
+            const resultDiv = document.getElementById('result');
+
+            if (!fileInput.files.length) {
+                alert('请先选择一个视频文件');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('video', fileInput.files[0]);
+
+            resultDiv.innerHTML = '正在处理视频，请稍候...';
+            resultDiv.style.display = 'block';
+
+            fetch('http://127.0.0.1:5000/api/process_video', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let resultHTML = `<h3>分析结果</h3>
+                        <p>${data.message}</p>
+                        <p>跳绳次数: ${data.count}</p>`;
+
+                    // 确保视频URL是完整的
+                    if (data.video_url) {
+                        const videoUrl = data.video_url.startsWith('http')
+                            ? data.video_url
+                            : `http://127.0.0.1:5000${data.video_url}`;
+
+                        resultHTML += `<div class="video-container">
+                            <h4>处理后的视频:</h4>
+                            <video controls width="100%">
+                                <source src="${videoUrl}" type="video/mp4">
+                                您的浏览器不支持视频播放
+                            </video>
+                            <p><a href="${videoUrl}" download>下载处理后的视频</a></p>
+                        </div>`;
+                    }
+
+                    resultDiv.innerHTML = resultHTML;
+                } else {
+                    resultDiv.innerHTML = `<h3>错误</h3><p>${data.error || '处理视频时出错'}</p>`;
+                }
+            })
+            .catch(error => {
+                resultDiv.innerHTML = `<h3>错误</h3><p>请求失败: ${error.message}</p>`;
+            });
+        }
+    </script>
+</body>
+</html>
